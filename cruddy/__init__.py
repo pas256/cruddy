@@ -93,8 +93,18 @@ class CRUD(object):
             response['status'] = 'error'
             response['message'] = 'get requires an id'
         else:
-            item = self._table.get_item(Key={'id': id})['Item']
-            response['data'] = self._replace_decimals(item)
+            try:
+                LOG.debug('Getting item with id: %s', id)
+                response = self._table.get_item(Key={'id': id})
+                LOG.debug(response)
+                item = response['Item']
+                response['data'] = self._replace_decimals(item)
+            except botocore.exceptions.ClientError as e:
+                LOG.debug(e)
+                response['status'] = 'error'
+                response['message'] = e.response['Error'].get('Message')
+                response['code'] = e.response['Error'].get('Code')
+                response['type'] = e.response['Error'].get('Type')
 
     def handler(self, item, operation):
         response = {'status': 'success'}
